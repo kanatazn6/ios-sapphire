@@ -1,0 +1,17 @@
+diff --git a/bsd/dev/sweet_touch.c b/bsd/dev/sweet_touch.c
+index 4ffbaf1..5929d4c 100644
+--- a/bsd/dev/sweet_touch.c
++++ b/bsd/dev/sweet_touch.c
+@@ -762,6 +762,12 @@ touch_thread(void *arg, wait_result_t result)
+ 	st.d_fid2 = fid2;
+ 	bool goodix = !ge && gid[0] == '9' && gid[1] == '8' && gid[2] == '9' && gid[3] == '6';
+ 	bool fts = !fe1 && !fe2 && fid1 == 0x54 && fid2 == 0x52;
++	uint32_t force_fts = 0;
++	(void)PE_parse_boot_argn("sweettouch_forcefts", &force_fts, sizeof(force_fts));
++	if (force_fts && fts && goodix && !st.dead) {
++		printf("SWEET TOUCH: forcing FocalTech on ambiguous probe (diagnostic)\n");
++		goodix = false;
++	}
+ 	if (st.dead || goodix == fts) {
+ 		printf("SWEET TOUCH: no unique supported IC (goodix=%d fts=%d dead=%d); stopping\n",
+ 		    goodix, fts, st.dead);
