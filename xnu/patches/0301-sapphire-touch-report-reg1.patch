@@ -1,0 +1,26 @@
+diff --git a/bsd/dev/sweet_touch.c b/bsd/dev/sweet_touch.c
+--- a/bsd/dev/sweet_touch.c
++++ b/bsd/dev/sweet_touch.c
+@@ -538,9 +538,20 @@ static int
+ touch_focaltech(void)
+ {
+-	uint8_t buf[63];
++	uint8_t buf[63] = {0};
+ 	int x[TOUCH_MAX] = {0}, y[TOUCH_MAX] = {0};
+ 	uint32_t mask = 0, seen = 0;
+-	int err = touch_read(0x38, 0, false, buf, sizeof(buf));
++	/* Some replacement FT3519T panels return only zeros for a burst
++	 * starting at 0x00. The working Linux driver starts at 0x01.
++	 * Keep byte zero as padding so existing record offsets stay intact.
++	 * Opt in for the affected panel; leave other panels unchanged. */
++	static uint32_t reg1 = 0, configured = 0;
++	if (!configured) {
++		(void)PE_parse_boot_argn("sweettouch_reg1", &reg1, sizeof(reg1));
++		configured = 1;
++		printf("SWEET TOUCH: report start register=%u\n", reg1 ? 1u : 0u);
++	}
++	int err = touch_read(0x38, reg1 ? 1 : 0, false,
++	    buf + (reg1 ? 1 : 0), sizeof(buf) - (reg1 ? 1 : 0));
+ 	if (err) {
+ 		return err;
+ 	}
